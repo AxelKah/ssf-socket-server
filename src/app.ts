@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/space-before-blocks */
 import express from 'express';
 import morgan from 'morgan';
 import helmet from 'helmet';
@@ -28,22 +29,24 @@ app.use(express.json());
 
 io.on('connection', (socket) => {
   console.log(`a user ${socket.id} connected`);
-
+  socket.on('create', (room: string | string[]) => {
+    socket.join(room);
+    console.log(`user ${socket.id} joined room ${room}`);
+  });
   socket.on('disconnect', () => {
     console.log(`user ${socket.id} disconnected`);
   });
   socket.on('update', (msg) => {
     console.log('message:', msg);
-    socket.broadcast.emit('test', `${socket.id}: ${msg}`);
+    socket.to([...socket.rooms]).emit('test', `${socket.id}: ${msg}`);
     if (msg === 'animal') {
-      socket.broadcast.emit('addAnimal', 'New animal added');
+      socket.to([...socket.rooms]).emit('addAnimal', 'New animal added');
     } else if (msg === 'species') {
-      socket.broadcast.emit('addSpecies', 'New species added');
-    } else if (msg === 'test') {
-      socket.broadcast.emit('test', 'Petteri :D:D:D');
+      socket.to([...socket.rooms]).emit('addSpecies', 'New species added');
+    } else if (msg === 'game') {
+      socket.to([...socket.rooms]).emit('addGame', 'New game added');
     }
   });
-
 });
 
 app.get<{}, MessageResponse>('/', (req, res) => {
