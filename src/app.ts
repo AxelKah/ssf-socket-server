@@ -32,6 +32,7 @@ io.on('connection', (socket) => {
   socket.on('create', (room: string | string[]) => {
     socket.join(room);
     console.log(`user ${socket.id} joined room ${room}`);
+    socket.to(room).emit('test', `user ${socket.id} joined room ${room}`);
   });
   socket.on('disconnect', () => {
     console.log(`user ${socket.id} disconnected`);
