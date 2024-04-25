@@ -44,12 +44,20 @@ io.on('connection', (socket) => {
     socket.on('decreaseScore', (value: number) => {
       // Decrease the score by the given value
       console.log(`user ${socket.id} decreased score by ${value}`); // Logging the score decrease
+      
+      // Check if the score is greater than the current score
+      if (value > score) {
+        socket.emit('bust', `Bust! Your score cannot be greater than your current score. Your current score is ${score}.`);
+        
+        return;
+      }
+
       score -= value;
 
       // Emit the updated score to all users in the room
       console.log(`user ${socket.id} score is now: ${score}`); // Logging the updated score
-      socket.to(room).emit('updateScore', `${socket.id} score is now: ${score}`);
-      socket.emit('updateScore', `Your score is now: ${score}`);
+      const updatedScore = { name: socket.id, score };
+      io.to(room).emit('updateScore', JSON.stringify(updatedScore));
 
       // Check if the score reaches 0
       if (score === 0) {
