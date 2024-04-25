@@ -8,6 +8,7 @@ interface ServerToClientEvents {
   bust: (message: string) => void;
   scoreUpdateInProgress: (message: string) => void;
   currentTurn: (message: string) => void;
+  clientMessage: (message: string) => void;
 
 
 }

@@ -74,10 +74,10 @@ io.on('connection', (socket) => {
       if (value > score) {
         socket.emit('bust', `Bust! Your score cannot be greater than your current score. Your current score is ${score}.`);
         return;
-      } else if (value > 180) {
+      }/* else if (value > 180) {
         socket.emit('bust', 'Bust! Your score cannot be greater than 180.');
         return;
-      }
+      }*/
       
 
       
@@ -86,12 +86,18 @@ io.on('connection', (socket) => {
 
       // Emit the updated score to all users in the room
       console.log(`user ${socket.id} score is now: ${score}`); // Logging the updated score
-      const updatedScore = { name: socket.id, score };
+      const updatedScore = { name: socket.id, score, turn: currentTurn };
       io.to(room).emit('updateScore', JSON.stringify(updatedScore));
 
       // Check if the score reaches 0
       if (score === 0) {
-        const winnerMessage = `Game over! ${socket.id} won.`;
+        let winnerMessage = `Game over! ${socket.id} WON!`;
+        const roomClients = io.sockets.adapter.rooms.get(room.toString()); // Cast 'room' to 'string'
+        if (roomClients) {
+          const clientsArray = Array.from(roomClients);
+          const clientNames = clientsArray.map(clientId => io.sockets.sockets.get(clientId)?.id);
+          winnerMessage += ` Clients: ${clientNames.join(', ')}.`;
+        }
         io.to(room).emit('gameOver', winnerMessage);
       }
 
@@ -102,7 +108,6 @@ io.on('connection', (socket) => {
         const currentIndex = clientsArray.indexOf(socket.id);
         const nextIndex = (currentIndex + 1) % clientsArray.length;
         currentTurn = clientsArray[nextIndex];
-        io.to(room).emit('currentTurn', currentTurn);
 
       } else {
         currentTurn = socket.id; // Set the current turn to the first connected user
