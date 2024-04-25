@@ -49,7 +49,13 @@ io.on('connection', (socket) => {
       // Emit the updated score to all users in the room
       console.log(`user ${socket.id} score is now: ${score}`); // Logging the updated score
       socket.to(room).emit('updateScore', `${socket.id} score is now: ${score}`);
+      socket.emit('updateScore', `Your score is now: ${score}`);
 
+      // Check if the score reaches 0
+      if (score === 0) {
+        const winnerMessage = `Game over! ${socket.id} won.`;
+        io.to(room).emit('gameOver', winnerMessage);
+      }
     });
   });
 

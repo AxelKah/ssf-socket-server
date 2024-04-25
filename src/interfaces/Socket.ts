@@ -4,6 +4,7 @@ interface ServerToClientEvents {
   test: (message: string) => void;
   addGame: (message: string) => void;
   updateScore: (message: string) => void;
+  gameOver: (message: string) => void;
 
 
 }
