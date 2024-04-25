@@ -68,12 +68,18 @@ io.on('connection', (socket) => {
 
       // Decrease the score by the given value
       console.log(`user ${socket.id} decreased score by ${value}`); // Logging the score decrease
-
+      
       // Check if the score is greater than the current score
       if (value > score) {
         socket.emit('bust', `Bust! Your score cannot be greater than your current score. Your current score is ${score}.`);
         return;
+      } else if (value > 180) {
+        socket.emit('bust', 'Bust! Your score cannot be greater than 180.');
+        return;
       }
+      
+
+      
 
       score -= value;
 
