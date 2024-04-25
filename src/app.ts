@@ -60,6 +60,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('decreaseScore', (value: number) => {
+      
       // Check if score is currently being updated by another client
       if (currentTurn !== socket.id) {
         socket.emit('scoreUpdateInProgress', `It is not your turn to update the score. Please wait for your turn. Current turn: ${currentTurn}`);
@@ -101,6 +102,8 @@ io.on('connection', (socket) => {
         const currentIndex = clientsArray.indexOf(socket.id);
         const nextIndex = (currentIndex + 1) % clientsArray.length;
         currentTurn = clientsArray[nextIndex];
+        io.to(room).emit('currentTurn', currentTurn);
+
       } else {
         currentTurn = socket.id; // Set the current turn to the first connected user
       }
@@ -110,7 +113,6 @@ io.on('connection', (socket) => {
     });
 
     // Emit the current turn to the user who just joined the room
-    socket.emit('currentTurn', currentTurn);
   });
 
   socket.on('disconnect', () => {
