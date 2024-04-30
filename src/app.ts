@@ -8,6 +8,7 @@ import * as middlewares from './middlewares'; // Importing custom middlewares
 import api from './api'; // Importing API routes
 import MessageResponse from './interfaces/MessageResponse'; // Importing custom interface
 import { ClientToServerEvents, ServerToClientEvents } from './interfaces/Socket'; // Importing custom socket events interface
+import { emit } from 'process';
 
 /* eslint-disable @typescript-eslint/space-before-blocks */
 
@@ -43,7 +44,7 @@ app.use(middlewares.notFound); // Handling 404 errors
 app.use(middlewares.errorHandler); // Handling errors
 let currentTurn: string; // Variable to track the current turn
 io.on('connection', (socket) => {
-  console.log(`a user ${socket.id} connected AAAAAAAAAAAAAAAAAAAAAAAAAAA`); // Logging when a user connects to the server
+  console.log(`a user ${socket.id} connected `); // Logging when a user connects to the server
   const sessionID = socket.id; // Storing the session ID of the connected user
   console.log(`sessionID: ${sessionID}`); // Logging the session ID
   socket.on('create', (room: string | string[]) => {
@@ -78,9 +79,7 @@ io.on('connection', (socket) => {
         socket.emit('bust', 'Bust! Your score cannot be greater than 180.');
         return;
       }*/
-      
-
-      
+    
 
       score -= value;
 
@@ -92,17 +91,14 @@ io.on('connection', (socket) => {
       // Check if the score reaches 0
       if (score === 0) {
         let winnerMessage = `Game over! ${socket.id} WON!`;
-        const roomClients = io.sockets.adapter.rooms.get(room.toString()); // Cast 'room' to 'string'
-        if (roomClients) {
-          const clientsArray = Array.from(roomClients);
-          const clientNames = clientsArray.map(clientId => io.sockets.sockets.get(clientId)?.id);
-          winnerMessage += ` Clients: ${clientNames.join(', ')}.`;
-        }
-        io.to(room).emit('gameOver', winnerMessage);
+        const roomClients = io.sockets.adapter.rooms.get(room.toString()) ?? new Set<string>(); // Cast 'room' to 'string' and provide a default value of an empty set
+        const clientsArray = Array.from(roomClients);
+        io.to(room).emit('gameOver', winnerMessage); // Emit the 'gameOver' event to all users in the room
+        io.to(room).emit('sendArray', clientsArray);
       }
 
       // Set the current turn to the next user in the room
-      const roomClients = io.sockets.adapter.rooms.get(room.toString()); // Cast 'room' to 'string'
+      const roomClients = io.sockets.adapter.rooms.get(room.toString()) ?? new Set<string>(); // Cast 'room' to 'string' and provide a default value of an empty set
       if (roomClients) {
         const clientsArray = Array.from(roomClients);
         const currentIndex = clientsArray.indexOf(socket.id);
@@ -119,6 +115,13 @@ io.on('connection', (socket) => {
 
     // Emit the current turn to the user who just joined the room
   });
+
+  socket.on('join', (room: string) => {
+    socket.join(room); // Joining a room
+    console.log(`user ${socket.id} joined room ${room}`); // Logging when a user joins a room
+    socket.to(room).emit('test', `user ${socket.id} joined room ${room}`); // Emitting a 'test' event to all users in the room except the sender
+  });
+  
 
   socket.on('disconnect', () => {
     console.log(`user ${socket.id} disconnected`); // Logging when a user disconnects from the server
