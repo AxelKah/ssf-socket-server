@@ -12,7 +12,6 @@ import {
   ClientToServerEvents,
   ServerToClientEvents,
 } from "./interfaces/Socket"; // Importing custom socket events interface
-import { emit } from "process";
 import { doGraphQLFetch } from "./graphql/fetch";
 import { addGame } from "./graphql/queries";
 
@@ -52,7 +51,7 @@ let currentTurn: string; // Variable to track the current turn
 const apiUrl = "http://localhost:3000/graphql";
 
 const sendGametoDB = async (data: Array<any>) => {
-  console.log('data: ', data[0].players[0], data[0].players[1], currentTurn);
+  console.log("data: ", data[0].players[0], data[0].players[1], currentTurn);
   try {
     const winnerData = await doGraphQLFetch(apiUrl, addGame, {
       game: {
@@ -61,11 +60,12 @@ const sendGametoDB = async (data: Array<any>) => {
         winner: currentTurn,
       },
     });
-    console.log('winnderData: ', winnerData);
+    console.log("winnerData: ", winnerData);
   } catch (error) {
-    console.error('Error:', error);
+    console.error("Error:", error);
   }
 };
+
 
 io.on("connection", (socket) => {
   console.log(`a user ${socket.id} connected `); // Logging when a user connects to the server
@@ -73,6 +73,7 @@ io.on("connection", (socket) => {
   console.log(`sessionID: ${sessionID}`); // Logging the session ID
   socket.on("create", (room: string | string[]) => {
     socket.join(room); // Joining a room
+
     console.log(`user ${socket.id} joined room ${room}`); // Logging when a user joins a room
     socket.to(room).emit("test", `user ${socket.id} joined room ${room}`); // Emitting a 'test' event to all users in the room except the sender
 
@@ -86,10 +87,12 @@ io.on("connection", (socket) => {
 
     socket.on("decreaseScore", (value: number) => {
       // Check if score is currently being updated by another client
+      console.log(`user ${socket.id} is updating score ${value}`); // Logging the score update
+      console.log(`currentTurn: ${currentTurn}`); // Logging the current turn
       if (currentTurn !== socket.id) {
         socket.emit(
           "scoreUpdateInProgress",
-          `It is not your turn to update the score. Please wait for your turn. Current turn: ${currentTurn}`,
+          `It is not your turn to update the score. Please wait for your turn. Current turn: ${currentTurn}`
         );
         return;
       }
@@ -101,7 +104,7 @@ io.on("connection", (socket) => {
       if (value > score) {
         socket.emit(
           "bust",
-          `Bust! Your score cannot be greater than your current score. Your current score is ${score}.`,
+          `Bust! Your score cannot be greater than your current score. Your current score is ${score}.`
         );
         return;
       } /* else if (value > 180) {
@@ -126,7 +129,6 @@ io.on("connection", (socket) => {
         sendGametoDB([{ players: clientsArray }]);
 
         io.to(room).emit("sendArray", clientsArray);
-
       }
 
       // Set the current turn to the next user in the room
@@ -148,10 +150,27 @@ io.on("connection", (socket) => {
     // Emit the current turn to the user who just joined the room
   });
 
-  socket.on("join", (room: string) => {
-    socket.join(room); // Joining a room
-    console.log(`user ${socket.id} joined room ${room}`); // Logging when a user joins a room
-    socket.to(room).emit("test", `user ${socket.id} joined room ${room}`); // Emitting a 'test' event to all users in the room except the sender
+  socket.on("join", (roomName: string) => {
+    let rooms = io.sockets.adapter.rooms;
+    let room = rooms.get(roomName);
+
+    if (room === undefined) {
+      socket.emit("clientMessage", `Room ${roomName} does not exist`);
+      return;
+    } else if (room.size == 1) {
+      //socket.emit("clientMessage", `Room ${roomName} is full`);
+      socket.join(roomName);
+      socket.to(roomName).emit("test", `user ${socket.id} joined room ${roomName}`); // Emitting a 'test' event to all users in the room except the sender
+    } else {
+      socket.emit("clientMessage", `Room is full`);
+      console.log("Room is full");
+    
+      return;
+    }
+
+    // socket.join(roomName); // Joining a room1
+    // console.log(`user ${socket.id} joined room ${roomName}`); // Logging when a user joins a room
+   // socket.to(roomName).emit("test", `user ${socket.id} joined room ${room}`); // Emitting a 'test' event to all users in the room except the sender
   });
 
   socket.on("disconnect", () => {
