@@ -73,7 +73,7 @@ io.on("connection", (socket) => {
   console.log(`sessionID: ${sessionID}`); // Logging the session ID
   socket.on("create", (room: string | string[]) => {
     socket.join(room); // Joining a room
-
+    
     console.log(`user ${socket.id} joined room ${room}`); // Logging when a user joins a room
     socket.to(room).emit("test", `user ${socket.id} joined room ${room}`); // Emitting a 'test' event to all users in the room except the sender
 
@@ -189,7 +189,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("update", (msg) => {
-    console.log("message:", msg); // Logging the received message
+    console.log(`${msg}`); // Logging the received message
 
     // Emitting different events based on the received message
     socket.to([...socket.rooms]).emit("test", `${socket.id}: ${msg}`);
