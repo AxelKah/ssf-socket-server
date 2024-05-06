@@ -48,8 +48,10 @@ app.use(middlewares.notFound); // Handling 404 errors
 app.use(middlewares.errorHandler); // Handling errors
 let currentTurn: string; // Variable to track the current turn
 
-const apiUrl = "http://localhost:3000/graphql";
+const apiUrl = process.env.API_URL as string; // API URL from environment variables
 
+
+//////////////////////////////////////////////////////////////////////////////////
 const sendGametoDB = async (data: Array<any>) => {
   console.log("data: ", data[0].players[0], data[0].players[1], currentTurn);
   try {
@@ -66,16 +68,21 @@ const sendGametoDB = async (data: Array<any>) => {
   }
 };
 
-
 io.on("connection", (socket) => {
   console.log(`a user ${socket.id} connected `); // Logging when a user connects to the server
   const sessionID = socket.id; // Storing the session ID of the connected user
   console.log(`sessionID: ${sessionID}`); // Logging the session ID
   socket.on("create", (room: string | string[]) => {
     socket.join(room); // Joining a room
-    
+
     console.log(`user ${socket.id} joined room ${room}`); // Logging when a user joins a room
     socket.to(room).emit("test", `user ${socket.id} joined room ${room}`); // Emitting a 'test' event to all users in the room except the sender
+    
+    const roomClients =
+          io.sockets.adapter.rooms.get(room.toString()) ?? new Set<string>(); // Cast 'room' to 'string' and provide a default value of an empty set
+    const clientsArrayToClients = Array.from(roomClients);
+    console.log("clientsArrayToClients: ", clientsArrayToClients);
+    io.to(room).emit("sendArray", clientsArrayToClients);
 
     // Set starting score of 501 for the user
     let score = 501;
@@ -92,7 +99,7 @@ io.on("connection", (socket) => {
       if (currentTurn !== socket.id) {
         socket.emit(
           "scoreUpdateInProgress",
-          `It is not your turn to update the score. Please wait for your turn. Current turn: ${currentTurn}`
+          `It is not your turn to update the score. Please wait for your turn. Current turn: ${currentTurn}`,
         );
         return;
       }
@@ -104,7 +111,7 @@ io.on("connection", (socket) => {
       if (value > score) {
         socket.emit(
           "bust",
-          `Bust! Your score cannot be greater than your current score. Your current score is ${score}.`
+          `Bust! Your score cannot be greater than your current score. Your current score is ${score}.`,
         );
         return;
       } /* else if (value > 180) {
@@ -160,17 +167,15 @@ io.on("connection", (socket) => {
     } else if (room.size == 1) {
       //socket.emit("clientMessage", `Room ${roomName} is full`);
       socket.join(roomName);
-      socket.to(roomName).emit("test", `user ${socket.id} joined room ${roomName}`); // Emitting a 'test' event to all users in the room except the sender
+      socket
+        .to(roomName)
+        .emit("test", `user ${socket.id} joined room ${roomName}`); // Emitting a 'test' event to all users in the room except the sender
     } else {
       socket.emit("clientMessage", `Room is full`);
       console.log("Room is full");
-    
+
       return;
     }
-
-    // socket.join(roomName); // Joining a room1
-    // console.log(`user ${socket.id} joined room ${roomName}`); // Logging when a user joins a room
-   // socket.to(roomName).emit("test", `user ${socket.id} joined room ${room}`); // Emitting a 'test' event to all users in the room except the sender
   });
 
   socket.on("disconnect", () => {
@@ -193,11 +198,8 @@ io.on("connection", (socket) => {
 
     // Emitting different events based on the received message
     socket.to([...socket.rooms]).emit("test", `${socket.id}: ${msg}`);
-    if (msg === "animal") {
-      socket.to([...socket.rooms]).emit("addAnimal", "New animal added");
-    } else if (msg === "species") {
-      socket.to([...socket.rooms]).emit("addSpecies", "New species added");
-    } else if (msg === "game") {
+
+    if (msg === "game") {
       socket.to([...socket.rooms]).emit("addGame", "New game added");
     } /* else if (typeof msg === 'number') {
       const result = 501 - msg;

@@ -1,19 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-const getAllAnimals = `
-query Animals {
-    animals {
-        animal_name
-        id
-    }
-}`;
-
-const getAllSpecies = `
-query Species {
-    species {
-        species_name
-        id
-    }
-}`;
 
 const addGame = `
 mutation AddGame($game: GameInput!) {
