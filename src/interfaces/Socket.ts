@@ -8,6 +8,8 @@ interface ServerToClientEvents {
   scoreUpdateInProgress: (message: string) => void;
   currentTurn: (message: string) => void;
   clientMessage: (message: string) => void;
+  sendWinner: (gameInfo: string) => void;
+  // tää ylempi takas array jos ei toimi
 
 
 }
