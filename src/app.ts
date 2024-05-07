@@ -1,163 +1,104 @@
 /* eslint-disable @typescript-eslint/quotes */
-import express from "express"; // Express framework for building web applications
-import morgan from "morgan"; // HTTP request logger middleware
-import helmet from "helmet"; // Security middleware
-import cors from "cors"; // Cross-origin resource sharing middleware
-import { createServer } from "http"; // Create HTTP server
-import { Server } from "socket.io"; // Socket.IO server
-import * as middlewares from "./middlewares"; // Importing custom middlewares
-import api from "./api"; // Importing API routes
-import MessageResponse from "./interfaces/MessageResponse"; // Importing custom interface
-import {
-  ClientToServerEvents,
-  ServerToClientEvents,
-} from "./interfaces/Socket"; // Importing custom socket events interface
-import { doGraphQLFetch } from "./graphql/fetch";
-import { addGame } from "./graphql/queries";
+import express from "express";
+import morgan from "morgan";
+import helmet from "helmet";
+import cors from "cors";
+import { createServer } from "http";
+import { Server } from "socket.io";
+import * as middlewares from "./middlewares";
+import api from "./api";
+import MessageResponse from "./interfaces/MessageResponse";
+import { ClientToServerEvents, ServerToClientEvents } from "./interfaces/Socket";
 import sendGametoDB from "./functions/gameToDB";
 
-/* eslint-disable @typescript-eslint/space-before-blocks */
+require("dotenv").config();
 
-// Importing required modules
-
-require("dotenv").config(); // Loading environment variables from .env file
-
-const app = express(); // Creating an instance of Express application
-
-const httpServer = createServer(app); // Creating HTTP server using Express app
+const app = express();
+const httpServer = createServer(app);
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   cors: {
     origin: "*",
   },
-}); // Creating Socket.IO server instance
+});
 
-app.use(morgan("dev")); // Using morgan middleware for logging HTTP requests
-app.use(helmet()); // Using helmet middleware for securing the app
-app.use(cors()); // Using cors middleware for enabling cross-origin resource sharing
-app.use(express.json()); // Parsing JSON request bodies
-//let isUpdatingScore = false; // Flag to track if score is currently being updated
+app.use(morgan("dev"));
+app.use(helmet());
+app.use(cors());
+app.use(express.json());
 
 app.get<{}, MessageResponse>("/", (req, res) => {
   res.json({
     message: "Socket server for Darts rooms",
-  }); // Sending a JSON response with a message
+  });
 });
 
-app.use("/api/v1", api); // Mounting API routes
+app.use("/api/v1", api);
+app.use(middlewares.notFound);
+app.use(middlewares.errorHandler);
 
-app.use(middlewares.notFound); // Handling 404 errors
-app.use(middlewares.errorHandler); // Handling errors
-let currentTurn: string; // Variable to track the current turn
-
-const apiUrl = process.env.API_URL as string; // API URL from environment variables
-
-//////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////
-/*
-const sendGametoDB = async (data: Array<any>) => {
- // console.log("data: ", data[0].players[0], data[0].players[1], currentTurn);
-  const token = process.env.TOKEN as string;
-  try {
-    if (data.length > 0) {
-      // Check if the data array is not empty
-      const winnerData = await doGraphQLFetch(
-        apiUrl,
-        addGame,
-        {
-          game: {
-            user1: data[0].players[0],
-            user2: data[0].players[1],
-            winner: currentTurn,
-          },
-        },
-        token,
-      );
-    } else {
-      console.error("Error: Data array is empty");
-    }
-  } catch (error) {
-    console.error("Error:", error);
-  }
-};
-*/
-//////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////
+let currentTurn: string;
 
 io.on("connection", (socket) => {
-  console.log(`a user ${socket.id} connected `); // Logging when a user connects to the server
-  const sessionID = socket.id; // Storing the session ID of the connected user
-  console.log(`sessionID: ${sessionID}`); // Logging the session ID
+  console.log(`a user ${socket.id} connected`);
+  const sessionID = socket.id;
+  console.log(`sessionID: ${sessionID}`);
+
   socket.on("create", (room: string | string[]) => {
-    socket.join(room); // Joining a room
+    const roomClients = io.sockets.adapter.rooms.get(room.toString()) ?? new Set<string>();
+    if (roomClients.size >= 2) {
+      socket.emit("clientMessage", `Room ${room} is already full`);
+      return;
+    }
 
-    console.log(`user ${socket.id} joined room ${room}`); // Logging when a user joins a room
-    socket.to(room).emit("test", `user ${socket.id} joined room ${room}`); // Emitting a 'test' event to all users in the room except the sender
+    socket.join(room);
+    console.log(`user ${socket.id} joined room ${room}`);
+    socket.to(room).emit("test", `user ${socket.id} joined room ${room}`);
 
-    // Set starting score of 501 for the user
     let score = 501;
 
-    const roomClients =
-      io.sockets.adapter.rooms.get(room.toString()) ?? new Set<string>(); // Cast 'room' to 'string' and provide a default value of an empty set
     const clientsArrayToClients = Array.from(roomClients);
     console.log("clientsArrayToClients: ", clientsArrayToClients);
     io.to(room).emit("sendArray", clientsArrayToClients);
 
     socket.on("setCurrentTurn", (user: string) => {
       currentTurn = user;
-      console.log(`user ${socket.id} set current turn to ${currentTurn}`); // Logging the current turn
+      console.log(`user ${socket.id} set current turn to ${currentTurn}`);
     });
 
     socket.on("decreaseScore", (value: number) => {
-      // Check if score is currently being updated by another client
-      console.log(`user ${socket.id} is updating score ${value}`); // Logging the score update
-      console.log(`currentTurn: ${currentTurn}`); // Logging the current turn
+      console.log(`user ${socket.id} is updating score ${value}`);
+      console.log(`currentTurn: ${currentTurn}`);
       if (currentTurn !== socket.id) {
         socket.emit(
           "scoreUpdateInProgress",
-          `It is not your turn to update the score. Please wait for your turn. Current turn: ${currentTurn}`
+          `It is not your turn to update the score. Please wait for your turn. Current turn: ${currentTurn}`,
         );
         return;
       }
 
-      // Decrease the score by the given value
-      console.log(`user ${socket.id} decreased score by ${value}`); // Logging the score decrease
+      console.log(`user ${socket.id} decreased score by ${value}`);
 
-      // Check if the score is greater than the current score
       if (value > score) {
         socket.emit(
           "bust",
-          `Bust! Your score cannot be greater than your current score. Your current score is ${score}.`
+          `Bust! Your score cannot be greater than your current score. Your current score is ${score}.`,
         );
         return;
-      } /* else if (value > 180) {
-        socket.emit('bust', 'Bust! Your score cannot be greater than 180.');
-        return;
-      }*/
+      }
 
       score -= value;
 
-      // Emit the updated score to all users in the room
-      console.log(`user ${socket.id} score is now: ${score}`); // Logging the updated score
+      console.log(`user ${socket.id} score is now: ${score}`);
       const updatedScore = { name: socket.id, score, turn: currentTurn };
       io.to(room).emit("updateScore", JSON.stringify(updatedScore));
 
-      // Check if the score reaches 0
       if (score === 0) {
         let winnerMessage = `Game over! ${socket.id} WON!`;
-        const roomClients =
-          io.sockets.adapter.rooms.get(room.toString()) ?? new Set<string>(); // Cast 'room' to 'string' and provide a default value of an empty set
         const clientsArray = Array.from(roomClients);
-        io.to(room).emit("gameOver", winnerMessage); // Emit the 'gameOver' event to all users in the room
+        io.to(room).emit("gameOver", winnerMessage);
         sendGametoDB([{ players: clientsArray }], currentTurn);
-
         io.to(room).emit("sendArray", clientsArray);
       }
-
-      // Set the current turn to the next user in the room
-      /*
-      const roomClients =
-        io.sockets.adapter.rooms.get(room.toString()) ?? new Set<string>(); // Cast 'room' to 'string' and provide a default value of an empty set
-     */
 
       if (roomClients) {
         const clientsArray = Array.from(roomClients);
@@ -165,76 +106,60 @@ io.on("connection", (socket) => {
         const nextIndex = (currentIndex + 1) % clientsArray.length;
         currentTurn = clientsArray[nextIndex];
       } else {
-        currentTurn = socket.id; // Set the current turn to the first connected user
+        currentTurn = socket.id;
       }
 
-      // Emit the current turn to all users in the room
       io.to(room).emit("currentTurn", currentTurn);
     });
-
-    // Emit the current turn to the user who just joined the room
   });
 
   socket.on("join", (roomName: string) => {
     let rooms = io.sockets.adapter.rooms;
     let room = rooms.get(roomName);
+    
 
     if (room === undefined) {
       socket.emit("clientMessage", `Room ${roomName} does not exist`);
       return;
     } else if (room.size == 1) {
-      //socket.emit("clientMessage", `Room ${roomName} is full`);
       socket.join(roomName);
-      socket
-        .to(roomName)
-        .emit("test", `user ${socket.id} joined room ${roomName}`); // Emitting a 'test' event to all users in the room except the sender
+      socket.to(roomName).emit("test", `user ${socket.id} joined room ${roomName}`);
     } else {
       socket.emit("clientMessage", `Room is full`);
       console.log("Room is full");
-
       return;
     }
   });
 
   socket.on("disconnect", () => {
-    console.log(`user ${socket.id} disconnected`); // Logging when a user disconnects from the server
-
-    // Check if the disconnected user was the one with the current turn
+    console.log(`user ${socket.id} disconnected`);
     if (currentTurn === socket.id) {
       currentTurn = socket.id;
-
-      // Emit the current turn as null to all users in the room
       const room = Array.from(socket.rooms)[1];
       if (room) {
-        io.to(room).emit("currentTurn", currentTurn); // Fix: Cast 'currentTurn' to 'string'
+        io.to(room).emit("currentTurn", currentTurn);
       }
     }
   });
 
   socket.on("update", (msg) => {
-    console.log(`${msg}`); // Logging the received message
-
-    // Emitting different events based on the received message
+    console.log(`${msg}`);
     socket.to([...socket.rooms]).emit("test", `${socket.id}: ${msg}`);
-
     if (msg === "game") {
       socket.to([...socket.rooms]).emit("addGame", "New game added");
-    } /* else if (typeof msg === 'number') {
-      const result = 501 - msg;
-      socket.to([...socket.rooms]).emit('subtractValue', result);
-    } */
+    }
   });
 });
 
 app.get<{}, MessageResponse>("/", (req, res) => {
   res.json({
     message: "Socket server for Darts rooms",
-  }); // Sending a JSON response with a message
+  });
 });
 
-app.use("/api/v1", api); // Mounting API routes
+app.use("/api/v1", api);
 
-app.use(middlewares.notFound); // Handling 404 errors
-app.use(middlewares.errorHandler); // Handling errors
+app.use(middlewares.notFound);
+app.use(middlewares.errorHandler);
 
-export default httpServer; // Exporting the HTTP server
+export default httpServer;
