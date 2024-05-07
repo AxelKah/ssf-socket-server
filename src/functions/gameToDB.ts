@@ -8,7 +8,7 @@ require("dotenv").config(); // Loading environment variables from .env file
 const apiUrl = process.env.API_URL as string; // API URL from environment variables
 
 const sendGametoDB = async (data: Array<any>, currentTurn: string) => {
-console.log("data to server: ", data);
+console.log("data to server   täälläää  näin satasarfas: ", data);
   const token = process.env.TOKEN as string;
   try {
     if (data.length > 0) {

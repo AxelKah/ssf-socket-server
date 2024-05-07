@@ -16,8 +16,8 @@ interface ServerToClientEvents {
 
 interface ClientToServerEvents {
   update: (message: string) => void;
-  create: (room: string) => void;
-  decreaseScore: (value: number) => void;
+  create: (room: string, username: string) => void;
+  decreaseScore: (value: number, name: string) => void;
   turn: (user: string) => void;
   setCurrentTurn: (user: string) => void;
   join: (room: string) => void;
