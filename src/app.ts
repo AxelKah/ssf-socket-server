@@ -94,6 +94,8 @@ io.on("connection", (socket) => {
 
       if (score === 0) {
         let winnerMessage = `Game over! ${socket.id} WON!`;
+        const roomClients =
+          io.sockets.adapter.rooms.get(room.toString()) ?? new Set<string>(); // Cast 'room' to 'string' and provide a default value of an empty set
         const clientsArray = Array.from(roomClients);
         io.to(room).emit("gameOver", winnerMessage);
         sendGametoDB([{ players: clientsArray }], currentTurn);
@@ -101,6 +103,8 @@ io.on("connection", (socket) => {
       }
 
       if (roomClients) {
+        const roomClients =
+        io.sockets.adapter.rooms.get(room.toString()) ?? new Set<string>();
         const clientsArray = Array.from(roomClients);
         const currentIndex = clientsArray.indexOf(socket.id);
         const nextIndex = (currentIndex + 1) % clientsArray.length;
@@ -112,7 +116,7 @@ io.on("connection", (socket) => {
       io.to(room).emit("currentTurn", currentTurn);
     });
   });
-
+/*
   socket.on("join", (roomName: string) => {
     let rooms = io.sockets.adapter.rooms;
     let room = rooms.get(roomName);
@@ -130,7 +134,7 @@ io.on("connection", (socket) => {
       return;
     }
   });
-
+*/
   socket.on("disconnect", () => {
     console.log(`user ${socket.id} disconnected`);
     if (currentTurn === socket.id) {
