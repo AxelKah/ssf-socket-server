@@ -14,6 +14,7 @@ import {
 } from "./interfaces/Socket"; // Importing custom socket events interface
 import { doGraphQLFetch } from "./graphql/fetch";
 import { addGame } from "./graphql/queries";
+import sendGametoDB from "./functions/gameToDB";
 
 /* eslint-disable @typescript-eslint/space-before-blocks */
 
@@ -52,18 +53,25 @@ const apiUrl = process.env.API_URL as string; // API URL from environment variab
 
 //////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////
+/*
 const sendGametoDB = async (data: Array<any>) => {
-  console.log("data: ", data[0].players[0], data[0].players[1], currentTurn);
+ // console.log("data: ", data[0].players[0], data[0].players[1], currentTurn);
+  const token = process.env.TOKEN as string;
   try {
     if (data.length > 0) {
       // Check if the data array is not empty
-      const winnerData = await doGraphQLFetch(apiUrl, addGame, {
-        game: {
-          user1: data[0].players[0],
-          user2: data[0].players[1],
-          winner: currentTurn,
+      const winnerData = await doGraphQLFetch(
+        apiUrl,
+        addGame,
+        {
+          game: {
+            user1: data[0].players[0],
+            user2: data[0].players[1],
+            winner: currentTurn,
+          },
         },
-      });
+        token,
+      );
     } else {
       console.error("Error: Data array is empty");
     }
@@ -71,6 +79,9 @@ const sendGametoDB = async (data: Array<any>) => {
     console.error("Error:", error);
   }
 };
+*/
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
 
 io.on("connection", (socket) => {
   console.log(`a user ${socket.id} connected `); // Logging when a user connects to the server
@@ -137,7 +148,7 @@ io.on("connection", (socket) => {
           io.sockets.adapter.rooms.get(room.toString()) ?? new Set<string>(); // Cast 'room' to 'string' and provide a default value of an empty set
         const clientsArray = Array.from(roomClients);
         io.to(room).emit("gameOver", winnerMessage); // Emit the 'gameOver' event to all users in the room
-        sendGametoDB([{ players: clientsArray }]);
+        sendGametoDB([{ players: clientsArray }], currentTurn);
 
         io.to(room).emit("sendArray", clientsArray);
       }
