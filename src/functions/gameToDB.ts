@@ -13,6 +13,7 @@ console.log("data to server   täälläää  näin satasarfas: ", data);
 //  const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NjNiNTM1NGE2YmIwMDRkNjA3NzhkYjMiLCJlbWFpbCI6InRlc3RAdGVzdC5jb20iLCJ1c2VyX25hbWUiOiJ0ZXN0Iiwicm9sZSI6InVzZXIiLCJpYXQiOjE3MTUxNjQ0OTV9.eqeVZ-ToSVKKdq7he2PTEa3rFaRCVUABnAzU6RU-hjY";  
 const token = process.env.TOKEN as string;
   try {
+    console.log("apiurl: ", apiUrl);
     if (data.length > 0) {
       // Check if the data array is not empty
       const winnerData = await doGraphQLFetch(
