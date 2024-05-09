@@ -79,7 +79,6 @@ class Room {
       }
 
       if (roomClients) {
-        console.log("ollaaks tääl kostkaana");
         const roomClients =
           this.io.sockets.adapter.rooms.get(this.roomName) ?? new Set<string>();
         const clientsArray = Array.from(roomClients);
@@ -137,9 +136,9 @@ io.on("connection", (socket) => {
 
   socket.on("update", (msg) => {
     console.log(`${msg}`);
-    socket.to([...socket.rooms]).emit("test", `${msg}`);
+    io.in([...socket.rooms]).emit("test", `${msg}`);
     if (msg === "game") {
-      socket.to([...socket.rooms]).emit("addGame", "New game added");
+    //  socket.to([...socket.rooms]).emit("addGame", "New game added");
     }
   });
 });
