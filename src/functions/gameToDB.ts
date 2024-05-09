@@ -9,25 +9,33 @@ const apiUrl = process.env.API_URL as string; // API URL from environment variab
 //const apiUrl = "https://axelkah-darts.azurewebsites.net/graphql";
 
 const sendGametoDB = async (data: Array<any>, currentTurn: string) => {
-console.log("data to server   täälläää  näin satasarfas: ", data);
-//  const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NjNiNTM1NGE2YmIwMDRkNjA3NzhkYjMiLCJlbWFpbCI6InRlc3RAdGVzdC5jb20iLCJ1c2VyX25hbWUiOiJ0ZXN0Iiwicm9sZSI6InVzZXIiLCJpYXQiOjE3MTUxNjQ0OTV9.eqeVZ-ToSVKKdq7he2PTEa3rFaRCVUABnAzU6RU-hjY";  
-const token = process.env.TOKEN as string;
+  console.log("data to server   täälläää  näin satasarfas: ", data);
+  const token = process.env.TOKEN as string;
   try {
     console.log("apiurl: ", apiUrl);
     if (data.length > 0) {
       // Check if the data array is not empty
-      const winnerData = await doGraphQLFetch(
-        apiUrl,
-        addGame,
-        {
-          game: {
-            user1: data[0].players[0],
-            user2: data[0].players[1],
-            winner: currentTurn,
-          },
-        },
-        token,
-      );
+      const winnerData = await new Promise((resolve, reject) => {
+        setTimeout(async () => {
+          try {
+            const result = await doGraphQLFetch(
+              apiUrl,
+              addGame,
+              {
+                game: {
+                  user1: data[0].players[0],
+                  user2: data[0].players[1],
+                  winner: currentTurn,
+                },
+              },
+              token,
+            );
+            resolve(result);
+          } catch (error) {
+            reject(error);
+          }
+        }, 10000); // 5 seconds timeout
+      });
     } else {
       console.error("Error: Data array is empty");
     }
