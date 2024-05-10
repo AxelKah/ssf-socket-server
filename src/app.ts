@@ -46,7 +46,7 @@ class Room {
     console.log(`User ${this.username} joined room ${this.roomName}`);
     socket.to(this.roomName).emit("test", `User ${this.username} joined room ${this.roomName}`);
     
-    const usernamesArray = Object.keys(this.usernameToSocketIdMap);
+    const usernamesArray = Object.keys(usernameToSocketIdMap);
 
     console.log("Clients Array To Clients: ", usernamesArray);
     this.io.to(this.roomName).emit("sendArray", usernamesArray);
