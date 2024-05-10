@@ -9,7 +9,10 @@ import { Server } from "socket.io";
 import * as middlewares from "./middlewares";
 import api from "./api";
 import MessageResponse from "./interfaces/MessageResponse";
-import { ClientToServerEvents, ServerToClientEvents } from "./interfaces/Socket";
+import {
+  ClientToServerEvents,
+  ServerToClientEvents,
+} from "./interfaces/Socket";
 import sendGametoDB from "./functions/gameToDB";
 import SocketIO from "socket.io";
 /* eslint-disable @typescript-eslint/quotes */
@@ -24,18 +27,20 @@ class Room {
   private usernameToSocketIdMap: Record<string, string> = {};
   private usernamesArray: Array<string>;
 
-
-  constructor(private roomName: string, private username:string, private io: Server<ClientToServerEvents, ServerToClientEvents>) {
+  constructor(
+    private roomName: string,
+    private username: string,
+    private io: Server<ClientToServerEvents, ServerToClientEvents>
+  ) {
     this.currentTurn = "";
     this.score = 501;
     this.usernameToSocketIdMap[username] = this.username;
     this.usernamesArray = Object();
   }
-  
-
 
   public join(socket: SocketIO.Socket) {
-    const roomClients = this.io.sockets.adapter.rooms.get(this.roomName) ?? new Set<string>();
+    const roomClients =
+      this.io.sockets.adapter.rooms.get(this.roomName) ?? new Set<string>();
     if (roomClients.size >= 2) {
       socket.emit("clientMessage", `Room ${this.roomName} is already full`);
       return;
@@ -45,17 +50,32 @@ class Room {
     const roomClientsArray: string[] = Object.entries(usernameToSocketIdMap)
       .filter(([_, value]) => value === this.roomName)
       .map(([key]) => key);
-    console.log("Username to Socket ID Map with same roomName: ", Object.entries(usernameToSocketIdMap).filter(([_, value]) => value === this.roomName));
+    console.log(
+      "Username to Socket ID Map with same roomName: ",
+      Object.entries(usernameToSocketIdMap).filter(
+        ([_, value]) => value === this.roomName
+      )
+    );
     this.usernamesArray = Object.keys(usernameToSocketIdMap);
     console.log(`User ${this.username} joined room ${this.roomName}`);
-    socket.to(this.roomName).emit("test", `User ${this.username} joined room ${this.roomName}`);
+    socket
+      .to(this.roomName)
+      .emit("test", `User ${this.username} joined room ${this.roomName}`);
 
     console.log("Clients Array To Clients: ", roomClientsArray);
     this.io.to(this.roomName).emit("sendArray", roomClientsArray);
 
     socket.on("setCurrentTurn", (user: string) => {
-      this.currentTurn = usernameToSocketIdMap[user];
-      console.log(`User ${this.username} set current turn to ${this.currentTurn}`);
+      const roomArray = Object.entries(usernameToSocketIdMap)
+        .filter(([_, value]) => value === this.roomName)
+        .map(([key]) => key);
+      const currentIndex = roomArray.indexOf(this.currentTurn);
+      const nextIndex = (currentIndex + 1) % roomArray.length;
+      this.currentTurn = roomArray[nextIndex];
+      console.log(
+        `User ${this.username} set current turn to ${this.currentTurn}`
+      );
+      this.io.to(this.roomName).emit("currentTurn", this.currentTurn);
     });
 
     socket.on("decreaseScore", (value: number, name: string) => {
@@ -64,7 +84,7 @@ class Room {
       if (value > this.score) {
         socket.emit(
           "bust",
-          `Bust! Your score cannot be greater than your current score. Your current score is ${this.score}.`,
+          `Bust! Your score cannot be greater than your current score. Your current score is ${this.score}.`
         );
         return;
       }
@@ -72,8 +92,15 @@ class Room {
       this.score -= value;
 
       console.log(`User ${this.username} score is now: ${this.score}`);
-      const updatedScore = { name: name, score: this.score, turn: this.currentTurn, throwScore: value };
-      this.io.to(this.roomName).emit("updateScore", JSON.stringify(updatedScore));
+      const updatedScore = {
+        name: name,
+        score: this.score,
+        turn: this.currentTurn,
+        throwScore: value,
+      };
+      this.io
+        .to(this.roomName)
+        .emit("updateScore", JSON.stringify(updatedScore));
       console.log("Username to Socket ID Map: ", usernameToSocketIdMap);
 
       if (this.score === 0) {
@@ -85,18 +112,23 @@ class Room {
       }
 
       if (roomClients) {
-        const roomClients =
+        /*   const roomClients =
           this.io.sockets.adapter.rooms.get(this.roomName) ?? new Set<string>();
         const clientsArray = Array.from(roomClients);
         const currentIndex = clientsArray.indexOf(socket.id);
         const nextIndex = (currentIndex + 1) % clientsArray.length;
         this.currentTurn = clientsArray[nextIndex];
-        console.log(`Current turn is now: ${this.currentTurn} on room ${this.roomName}`);
-        console.log(`Current turn is now: ${usernameToSocketIdMap[this.currentTurn]} on room ${this.roomName}`);
-      } else {
-        this.currentTurn = socket.id;
-      }
-      console.log(`Current turn is now: ${this.currentTurn} on room ${this.roomName}`);
+       */ const roomArray = Object.entries(usernameToSocketIdMap)
+          .filter(([_, value]) => value === this.roomName)
+          .map(([key]) => key);
+        const currentIndex = roomArray.indexOf(this.currentTurn);
+        const nextIndex = (currentIndex + 1) % roomArray.length;
+        this.currentTurn = roomArray[nextIndex];
+
+        console.log(
+          `Current turn is now: ${this.currentTurn} on room ${this.roomName}`
+        );
+      } 
       this.io.to(this.roomName).emit("currentTurn", this.currentTurn);
     });
   }
@@ -144,7 +176,7 @@ io.on("connection", (socket) => {
     console.log(`${msg}`);
     io.in([...socket.rooms]).emit("test", `${msg}`);
     if (msg === "game") {
-    //  socket.to([...socket.rooms]).emit("addGame", "New game added");
+      //  socket.to([...socket.rooms]).emit("addGame", "New game added");
     }
   });
 });
