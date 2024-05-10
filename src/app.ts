@@ -88,6 +88,24 @@ class Room {
         );
         return;
       }
+      if (roomClients) {
+        const roomArray = Object.entries(usernameToSocketIdMap)
+          .filter(([_, value]) => value === this.roomName)
+          .map(([key]) => key);
+        const currentIndex = roomArray.indexOf(this.currentTurn);
+        console.log(`Current index is: ${currentIndex}`);
+        let nextIndex = (currentIndex + 1) % roomArray.length;
+        while (roomArray[nextIndex] === this.username) {
+          nextIndex = (nextIndex + 1) % roomArray.length;
+        }
+        this.currentTurn = roomArray[nextIndex];
+        console.log(`Current turn is now                          : ${this.currentTurn} on room ${this.roomName}`);
+
+        console.log(
+          `Current turn is now: ${this.currentTurn} on room ${this.roomName}`
+        );
+      }
+      this.io.to(this.roomName).emit("currentTurn", this.currentTurn);
 
       this.score -= value;
 
@@ -111,25 +129,7 @@ class Room {
         this.io.to(this.roomName).emit("sendArray", usernames);
       }
 
-      if (roomClients) {
-        /*   const roomClients =
-          this.io.sockets.adapter.rooms.get(this.roomName) ?? new Set<string>();
-        const clientsArray = Array.from(roomClients);
-        const currentIndex = clientsArray.indexOf(socket.id);
-        const nextIndex = (currentIndex + 1) % clientsArray.length;
-        this.currentTurn = clientsArray[nextIndex];
-       */ const roomArray = Object.entries(usernameToSocketIdMap)
-          .filter(([_, value]) => value === this.roomName)
-          .map(([key]) => key);
-        const currentIndex = roomArray.indexOf(this.currentTurn);
-        const nextIndex = (currentIndex + 1) % roomArray.length;
-        this.currentTurn = roomArray[nextIndex];
 
-        console.log(
-          `Current turn is now: ${this.currentTurn} on room ${this.roomName}`
-        );
-      } 
-      this.io.to(this.roomName).emit("currentTurn", this.currentTurn);
     });
   }
 }
