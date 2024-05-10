@@ -27,6 +27,8 @@ class Room {
   constructor(private roomName: string, private username:string, private io: Server<ClientToServerEvents, ServerToClientEvents>) {
     this.currentTurn = "";
     this.score = 501;
+    this.usernameToSocketIdMap[username] = this.username;
+    console.log("Username to Socket ID Map: ", usernameToSocketIdMap);
   }
   
 
@@ -39,11 +41,11 @@ class Room {
     }
 
     socket.join(this.roomName);
-    this.usernameToSocketIdMap[this.username] = socket.id;
-    console.log("Username to Socket ID Map: ", usernameToSocketIdMap);
+    usernameToSocketIdMap[this.username] = socket.id;
+    console.log("Username to Socket ID Map222222222222222: ", usernameToSocketIdMap);
     console.log(`User ${this.username} joined room ${this.roomName}`);
     socket.to(this.roomName).emit("test", `User ${this.username} joined room ${this.roomName}`);
-
+    
     const usernamesArray = Object.keys(this.usernameToSocketIdMap);
 
     console.log("Clients Array To Clients: ", usernamesArray);
