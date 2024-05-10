@@ -9,7 +9,7 @@ const apiUrl = process.env.API_URL as string; // API URL from environment variab
 //const apiUrl = "https://axelkah-darts.azurewebsites.net/graphql";
 
 const sendGametoDB = async (data: Array<any>, currentTurn: string) => {
-  console.log("data to server   täälläää  näin satasarfas: ", data);
+  console.log("data to server: ", data);
   const token = process.env.TOKEN as string;
   try {
     console.log("apiurl: ", apiUrl);

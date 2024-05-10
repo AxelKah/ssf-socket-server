@@ -61,7 +61,7 @@ class Room {
     socket
       .to(this.roomName)
       .emit("test", `User ${this.username} joined room ${this.roomName}`);
-
+    console.log("Usernames Array: ", roomClientsArray[0]);
     console.log("Clients Array To Clients: ", roomClientsArray);
     this.io.to(this.roomName).emit("sendArray", roomClientsArray);
 
@@ -123,10 +123,12 @@ class Room {
 
       if (this.score === 0) {
         let winnerMessage = `Game over! ${this.username} WON!`;
-        const usernames = Object.keys(usernameToSocketIdMap);
+        const roomArray = Object.entries(usernameToSocketIdMap)
+        .filter(([_, value]) => value === this.roomName)
+        .map(([key]) => key);
         this.io.to(this.roomName).emit("gameOver", winnerMessage);
-        sendGametoDB([{ players: usernames }], this.username);
-        this.io.to(this.roomName).emit("sendArray", usernames);
+        sendGametoDB([{ players: roomArray }], this.username);
+        this.io.to(this.roomName).emit("sendArray", roomArray);
       }
 
 
