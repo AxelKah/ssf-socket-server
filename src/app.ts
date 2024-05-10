@@ -66,7 +66,7 @@ class Room {
       this.score -= value;
 
       console.log(`User ${this.username} score is now: ${this.score}`);
-      const updatedScore = { name: name, score: this.score, turn: this.currentTurn };
+      const updatedScore = { name: name, score: this.score, turn: this.currentTurn, throwScore: value };
       this.io.to(this.roomName).emit("updateScore", JSON.stringify(updatedScore));
       console.log("Username to Socket ID Map: ", usernameToSocketIdMap);
 
