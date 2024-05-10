@@ -30,7 +30,7 @@ class Room {
   constructor(
     private roomName: string,
     private username: string,
-    private io: Server<ClientToServerEvents, ServerToClientEvents>
+    private io: Server<ClientToServerEvents, ServerToClientEvents>,
   ) {
     this.currentTurn = "";
     this.score = 501;
@@ -53,8 +53,8 @@ class Room {
     console.log(
       "Username to Socket ID Map with same roomName: ",
       Object.entries(usernameToSocketIdMap).filter(
-        ([_, value]) => value === this.roomName
-      )
+        ([_, value]) => value === this.roomName,
+      ),
     );
     this.usernamesArray = Object.keys(usernameToSocketIdMap);
     console.log(`User ${this.username} joined room ${this.roomName}`);
@@ -73,7 +73,7 @@ class Room {
       const nextIndex = (currentIndex + 1) % roomArray.length;
       this.currentTurn = roomArray[nextIndex];
       console.log(
-        `User ${this.username} set current turn to ${this.currentTurn}`
+        `User ${this.username} set current turn to ${this.currentTurn}`,
       );
       this.io.to(this.roomName).emit("currentTurn", this.currentTurn);
     });
@@ -84,7 +84,7 @@ class Room {
       if (value > this.score) {
         socket.emit(
           "bust",
-          `Bust! Your score cannot be greater than your current score. Your current score is ${this.score}.`
+          `Bust! Your score cannot be greater than your current score. Your current score is ${this.score}.`,
         );
         return;
       }
@@ -102,7 +102,7 @@ class Room {
         console.log(`Current turn is now                          : ${this.currentTurn} on room ${this.roomName}`);
 
         console.log(
-          `Current turn is now: ${this.currentTurn} on room ${this.roomName}`
+          `Current turn is now: ${this.currentTurn} on room ${this.roomName}`,
         );
       }
       this.io.to(this.roomName).emit("currentTurn", this.currentTurn);
