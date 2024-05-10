@@ -22,13 +22,14 @@ class Room {
   private currentTurn: string;
   private score: number;
   private usernameToSocketIdMap: Record<string, string> = {};
+  private usernamesArray: Array<string>;
 
 
   constructor(private roomName: string, private username:string, private io: Server<ClientToServerEvents, ServerToClientEvents>) {
     this.currentTurn = "";
     this.score = 501;
     this.usernameToSocketIdMap[username] = this.username;
-    console.log("Username to Socket ID Map: ", usernameToSocketIdMap);
+    this.usernamesArray = Object();
   }
   
 
@@ -39,17 +40,18 @@ class Room {
       socket.emit("clientMessage", `Room ${this.roomName} is already full`);
       return;
     }
-
     socket.join(this.roomName);
-    usernameToSocketIdMap[this.username] = socket.id;
-    console.log("Username to Socket ID Map222222222222222: ", usernameToSocketIdMap);
+    usernameToSocketIdMap[this.username] = this.roomName;
+    const roomClientsArray: string[] = Object.entries(usernameToSocketIdMap)
+      .filter(([_, value]) => value === this.roomName)
+      .map(([key]) => key);
+    console.log("Username to Socket ID Map with same roomName: ", Object.entries(usernameToSocketIdMap).filter(([_, value]) => value === this.roomName));
+    this.usernamesArray = Object.keys(usernameToSocketIdMap);
     console.log(`User ${this.username} joined room ${this.roomName}`);
     socket.to(this.roomName).emit("test", `User ${this.username} joined room ${this.roomName}`);
-    
-    const usernamesArray = Object.keys(usernameToSocketIdMap);
 
-    console.log("Clients Array To Clients: ", usernamesArray);
-    this.io.to(this.roomName).emit("sendArray", usernamesArray);
+    console.log("Clients Array To Clients: ", roomClientsArray);
+    this.io.to(this.roomName).emit("sendArray", roomClientsArray);
 
     socket.on("setCurrentTurn", (user: string) => {
       this.currentTurn = usernameToSocketIdMap[user];
